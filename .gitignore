@@ -4,3 +4,4 @@ coverage.out
 run.sh
 database.yml
 /web
+/bookings
