@@ -2,23 +2,38 @@ package helpers
 
 import (
 	"fmt"
-	"github.com/tsawler/bookings-app/internal/config"
+	"io"
+	"log"
 	"net/http"
+	"os"
 	"runtime/debug"
+
+	"github.com/tsawler/bookings-app/internal/config"
 )
 
 var app *config.AppConfig
 
-// NewHelpers sets up app config for helpers
-func NewHelpers(a *config.AppConfig) {
-	app = a
+// NewHelpers links the package with the config object
+func NewHelpers(ac *config.AppConfig, infoW io.Writer, errW io.Writer) {
+	app = ac
+	if infoW == nil {
+		infoW = os.Stdout
+	}
+	app.InfoLog = log.New(infoW, "INFO\t", log.Ltime|log.Lshortfile)
+
+	if errW == nil {
+		errW = os.Stderr
+	}
+	app.ErrorLog = log.New(errW, "ERROR\t", log.Ltime|log.Llongfile)
 }
 
-func ClientError(w http.ResponseWriter, status int) {
-	app.InfoLog.Println("Client error with status of", status)
-	http.Error(w, http.StatusText(status), status)
+// ClientError logs a client error
+func ClientError(w http.ResponseWriter, code int) {
+	app.InfoLog.Printf("%s STATUS=%d", http.StatusText(code), code)
+	http.Error(w, http.StatusText(code), code)
 }
 
+// ServerError logs an internal error
 func ServerError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	app.ErrorLog.Println(trace)

@@ -3,6 +3,10 @@ package main
 import (
 	"encoding/gob"
 	"fmt"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/alexedwards/scs/v2"
 	"github.com/tsawler/bookings-app/internal/config"
 	"github.com/tsawler/bookings-app/internal/driver"
@@ -10,18 +14,14 @@ import (
 	"github.com/tsawler/bookings-app/internal/helpers"
 	"github.com/tsawler/bookings-app/internal/models"
 	"github.com/tsawler/bookings-app/internal/render"
-	"log"
-	"net/http"
-	"os"
-	"time"
 )
 
 const portNumber = ":8080"
 
 var app config.AppConfig
 var session *scs.SessionManager
-var infoLog *log.Logger
-var errorLog *log.Logger
+// var infoLog *log.Logger
+// var errorLog *log.Logger
 
 // main is the main function
 func main() {
@@ -90,7 +90,7 @@ func run() (*driver.DB, error) {
 	repo := handlers.NewRepo(&app, db)
 	handlers.NewHandlers(repo)
 	render.NewRenderer(&app)
-	helpers.NewHelpers(&app)
+	helpers.NewHelpers(&app, nil, nil)
 
 	return db, nil
 }
