@@ -51,9 +51,7 @@ func TestDefaultLoggers(t *testing.T) {
 		NewHelpers(&appObj, nil, nil)
 		ClientError(recorder, 400)
 	}
-	fmt.Println("Entering capture")
 	out := captureStdOut(runLogFunc, false)
-	fmt.Println("exiting capture", out)
 	if !strings.Contains(out, "INFO\t") {
 		t.Error("infolog entry should contain INFO prefix")
 	}
