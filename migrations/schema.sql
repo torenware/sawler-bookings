@@ -301,6 +301,34 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: reservations_email_idx; Type: INDEX; Schema: public; Owner: saylordb
+--
+
+CREATE INDEX reservations_email_idx ON public.reservations USING btree (email);
+
+
+--
+-- Name: reservations_last_name_idx; Type: INDEX; Schema: public; Owner: saylordb
+--
+
+CREATE INDEX reservations_last_name_idx ON public.reservations USING btree (last_name);
+
+
+--
+-- Name: reservations_room_id_idx; Type: INDEX; Schema: public; Owner: saylordb
+--
+
+CREATE INDEX reservations_room_id_idx ON public.reservations USING btree (room_id);
+
+
+--
+-- Name: reservations_start_date_end_date_idx; Type: INDEX; Schema: public; Owner: saylordb
+--
+
+CREATE INDEX reservations_start_date_end_date_idx ON public.reservations USING btree (start_date, end_date);
+
+
+--
 -- Name: room_restrictions_reservation_id_idx; Type: INDEX; Schema: public; Owner: saylordb
 --
 

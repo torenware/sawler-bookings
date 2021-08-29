@@ -1,0 +1,4 @@
+add_index("reservations", "room_id", {})
+add_index("reservations", "email", {})
+add_index("reservations", "last_name", {})
+add_index("reservations", ["start_date", "end_date"], {})
