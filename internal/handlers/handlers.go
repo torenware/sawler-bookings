@@ -13,7 +13,6 @@ import (
 	"github.com/tsawler/bookings-app/internal/render"
 	"github.com/tsawler/bookings-app/internal/repository"
 	"github.com/tsawler/bookings-app/internal/repository/dbrepo"
-	"net/http"
 )
 
 // Repo the repository used by the handlers
