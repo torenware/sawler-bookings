@@ -117,6 +117,21 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	}
 	reservation.ID = newID
 
+	restriction := models.RoomRestriction{
+		StartDate:     reservation.StartDate,
+		EndDate:       reservation.EndDate,
+		RoomID:        reservation.RoomID,
+		ReservationID: reservation.ID,
+		RestrictionID: 1, // temp
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+	}
+	roomRestrictID, err := m.DB.InsertRoomRestriction(restriction)
+	if err != nil {
+		helpers.ServerError(w, err)
+	}
+	log.Printf("RRID = %d", roomRestrictID)
+
 	m.App.Session.Put(r.Context(), "reservation", reservation)
 	http.Redirect(w, r, "/reservation-summary", http.StatusSeeOther)
 }
