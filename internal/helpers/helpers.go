@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -38,4 +39,10 @@ func ServerError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	app.ErrorLog.Println(trace)
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+}
+
+// PrintStruct turns a struct into json and prints it.
+func PrintStruct(item interface{}) {
+	data, _ := json.MarshalIndent(item, "", "    ")
+	fmt.Println(string(data))
 }

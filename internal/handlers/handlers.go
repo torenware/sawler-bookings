@@ -3,7 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/tsawler/bookings-app/internal/config"
 	"github.com/tsawler/bookings-app/internal/driver"
@@ -52,6 +55,7 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 	var emptyReservation models.Reservation
 	data := make(map[string]interface{})
 	data["reservation"] = emptyReservation
+	log.Println("We called /make-reservation")
 
 	render.Template(w, r, "make-reservation.page.tmpl", &models.TemplateData{
 		Form: forms.New(nil),
@@ -67,11 +71,28 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	date_layout := "2006-01-02"
+	sd, err := time.Parse(date_layout, r.Form.Get("start_date"))
+	if err != nil {
+		helpers.ServerError(w, err)
+	}
+	ed, err := time.Parse(date_layout, r.Form.Get("end_date"))
+	if err != nil {
+		helpers.ServerError(w, err)
+	}
+	room_id, err := strconv.Atoi(r.Form.Get("room_id"))
+	if err != nil {
+		helpers.ServerError(w, err)
+	}
+
 	reservation := models.Reservation{
 		FirstName: r.Form.Get("first_name"),
 		LastName:  r.Form.Get("last_name"),
 		Email:     r.Form.Get("email"),
 		Phone:     r.Form.Get("phone"),
+		StartDate: sd,
+		EndDate:   ed,
+		RoomID:    int(room_id),
 	}
 
 	form := forms.New(r.PostForm)
@@ -89,6 +110,12 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	newID, err := m.DB.InsertReservation(reservation)
+	if err != nil {
+		helpers.ServerError(w, err)
+	}
+	reservation.ID = newID
 
 	m.App.Session.Put(r.Context(), "reservation", reservation)
 	http.Redirect(w, r, "/reservation-summary", http.StatusSeeOther)
@@ -153,6 +180,8 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
+
+	helpers.PrintStruct(reservation)
 
 	m.App.Session.Remove(r.Context(), "reservation")
 

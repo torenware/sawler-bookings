@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"html/template"
+	"log"
+	"net/http"
+	"path/filepath"
+
 	"github.com/justinas/nosurf"
 	"github.com/tsawler/bookings-app/internal/config"
 	"github.com/tsawler/bookings-app/internal/models"
-	"html/template"
-	"net/http"
-	"path/filepath"
 )
 
 var functions = template.FuncMap{}
@@ -46,15 +48,20 @@ func Template(w http.ResponseWriter, r *http.Request, tmpl string, td *models.Te
 	if !ok {
 		//log.Fatal("Could not get template from template cache")
 		return errors.New("could not get template from cache")
+	} else {
+		log.Println("We got a template from cache")
 	}
 
 	buf := new(bytes.Buffer)
 
 	td = AddDefaultData(td, r)
 
-	_ = t.Execute(buf, td)
+	err := t.Execute(buf, td)
+	if err != nil {
+		log.Printf("Error processing template: %s", err)
+	}
 
-	_, err := buf.WriteTo(w)
+	_, err = buf.WriteTo(w)
 	if err != nil {
 		fmt.Println("error writing template to browser", err)
 		return err

@@ -3,19 +3,21 @@ package handlers
 import (
 	"encoding/gob"
 	"fmt"
-	"github.com/alexedwards/scs/v2"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
-	"github.com/justinas/nosurf"
-	"github.com/tsawler/bookings-app/internal/config"
-	"github.com/tsawler/bookings-app/internal/models"
-	"github.com/tsawler/bookings-app/internal/render"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/alexedwards/scs/v2"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/justinas/nosurf"
+	"github.com/tsawler/bookings-app/internal/config"
+	driverDef "github.com/tsawler/bookings-app/internal/driver"
+	"github.com/tsawler/bookings-app/internal/models"
+	"github.com/tsawler/bookings-app/internal/render"
 )
 
 var app config.AppConfig
@@ -53,7 +55,10 @@ func getRoutes() http.Handler {
 	app.TemplateCache = tc
 	app.UseCache = true
 
-	repo := NewRepo(&app)
+	// @todo add a real DB reference
+	dbRepo := driverDef.DB{}
+
+	repo := NewRepo(&app, &dbRepo)
 	NewHandlers(repo)
 
 	render.NewRenderer(&app)
