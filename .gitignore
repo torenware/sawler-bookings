@@ -1,5 +1,10 @@
 .idea
 .DS_Store
+*~
+*.log
 coverage.out
 run.sh
 database.yml
+/web
+/bookings
+.env*

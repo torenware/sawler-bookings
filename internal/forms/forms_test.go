@@ -1,130 +1,129 @@
 package forms
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 )
 
+// An empty form should be valid
 func TestForm_Valid(t *testing.T) {
-	r := httptest.NewRequest("POST", "/whatever", nil)
-	form := New(r.PostForm)
-
-	isValid := form.Valid()
-	if !isValid {
-		t.Error("got invalid when should have been valid")
+	request := httptest.NewRequest("POST", "/goobar", nil)
+	form := New(request.PostForm)
+	if !form.Valid() {
+		t.Error("Empty form should be Valid")
 	}
 }
 
 func TestForm_Required(t *testing.T) {
-	r := httptest.NewRequest("POST", "/whatever", nil)
-	form := New(r.PostForm)
+	request := httptest.NewRequest("POST", "/goobar", nil)
+	form := New(request.PostForm)
 
 	form.Required("a", "b", "c")
+	// No such fields, so this should fail.
 	if form.Valid() {
-		t.Error("form shows valid when required fields missing")
+		t.Error("expected validation to fail since fields are not present")
 	}
 
+	// create a form with these values...
 	postedData := url.Values{}
-	postedData.Add("a", "a")
-	postedData.Add("b", "a")
-	postedData.Add("c", "a")
+	postedData.Add("a", "apple")
+	postedData.Add("b", "basket")
+	postedData.Add("c", "cinnamon")
 
-	r, _ = http.NewRequest("POST", "/whatever", nil)
+	request = httptest.NewRequest("POST", "/goobar", nil)
+	request.PostForm = postedData
 
-	r.PostForm = postedData
-	form = New(r.PostForm)
+	form = New(request.PostForm)
 	form.Required("a", "b", "c")
+	// fields present, so this should succeed.
 	if !form.Valid() {
-		t.Error("shows does not have required fields when it does")
+		t.Error("expected validation to succeed since fields are present")
 	}
+
 }
 
+// Test the Has method on *form
 func TestForm_Has(t *testing.T) {
-	postedData := url.Values{}
-	form := New(url.Values{})
+	values := url.Values{}
+	form := New(values)
 
-	has := form.Has("whatever")
-	if has {
-		t.Error("form shows has field when it does not")
+	// We have not added any items to the form data, so has should not find a field.
+	if form.Has("afield") {
+		t.Error("Has detected a field when it should not")
 	}
 
-	postedData = url.Values{}
-	postedData.Add("a", "a")
+	postdata := url.Values{
+		"afield":   []string{"exists"},
+		"tooshort": []string{},
+	}
 
-	form = New(postedData)
-
-	has = form.Has("a")
-	if !has {
-		t.Error("shows form does not have field when it should")
+	form = New(postdata)
+	if !form.Has("afield") {
+		t.Error("Expected form Has afield, yet it does not")
 	}
 }
 
+// Test minlength validator
 func TestForm_MinLength(t *testing.T) {
-	postedData := url.Values{}
-	form := New(postedData)
+	values := url.Values{}
+	form := New(values)
 
-	form.MinLength("x", 10)
+	// We have not added any items to the form data, so minlegth should fail.
+	if form.MinLength("afield", 3) {
+		t.Error("MinLegth detected and passed a field when it should not")
+	}
+
+	postdata := url.Values{
+		"afield":   []string{"exists"},
+		"tooshort": []string{"ts"},
+	}
+
+	form = New(postdata)
+
+	// Check afield, which has more than 3 chars. Should pass.
+	if !form.MinLength("afield", 3) {
+		t.Error("afield has more than 3 chars, should pass but did not")
+	}
+
+	// Check tooshort, which has less than 3 chars. Should pass.
+	if form.MinLength("tooshort", 3) {
+		t.Error("tooshort has less than 3 chars, should not pass but did")
+	}
+
+	// Form should now be invalid as well.
 	if form.Valid() {
-		t.Error("form shows min length for non-existent field")
-	}
-
-	isError := form.Errors.Get("x")
-	if isError == "" {
-		t.Error("should have error but did not get one")
-	}
-
-	postedData = url.Values{}
-	postedData.Add("some_field", "some_value")
-
-	form = New(postedData)
-
-	form.MinLength("some_field", 100)
-	if form.Valid() {
-		t.Error("shows min length of 100 met when data is shorter")
-	}
-
-	postedData = url.Values{}
-	postedData.Add("another_field", "abc123")
-	form = New(postedData)
-
-	form.MinLength("another_field", 1)
-	if !form.Valid() {
-		t.Error("shows min length if 1 is not met when it is")
-	}
-
-	isError = form.Errors.Get("another_field")
-	if isError != "" {
-		t.Error("should not have error but got one")
+		t.Error("after invalid input, form should be invalid")
 	}
 
 }
 
+// Check isEmail validator.
 func TestForm_IsEmail(t *testing.T) {
-	postedValues := url.Values{}
-	form := New(postedValues)
+	request := httptest.NewRequest("POST", "/goobar", nil)
+	form := New(request.PostForm)
 
-	form.IsEmail("x")
+	// We have not added any items to the form data, so minlegth should fail.
+	form.IsEmail("email")
 	if form.Valid() {
-		t.Error("form shows valid email for non-existent field")
+		t.Error("email to isEmail detected and passed a field when it should not")
 	}
 
-	postedValues = url.Values{}
-	postedValues.Add("email", "me@here.com")
-	form = New(postedValues)
+	postdata := url.Values{
+		"email":    []string{"exists@decarte.org"},
+		"notemail": []string{"ts"},
+	}
 
+	// VAlidating email should leave form valid
+	form = New(postdata)
 	form.IsEmail("email")
 	if !form.Valid() {
-		t.Error("got an invalid email when we should not have")
+		t.Error("email is valid and form should still be valid")
 	}
 
-	postedValues = url.Values{}
-	postedValues.Add("email", "x")
-	form = New(postedValues)
-
-	form.IsEmail("email")
+	form.IsEmail("notemail")
 	if form.Valid() {
-		t.Error("got valid for invalid email address")
+		t.Error("notemail is not valid and form should now be invalid")
 	}
+
 }

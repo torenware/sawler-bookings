@@ -1,0 +1,7 @@
+add_index("users", "email", {"unique": true})
+
+
+add_index("room_restrictions", "room_id", {})
+add_index("room_restrictions", "reservation_id", {})
+add_index("room_restrictions", ["start_date", "end_date"], {})
+
