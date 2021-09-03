@@ -8,13 +8,21 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/justinas/nosurf"
 	"github.com/tsawler/bookings-app/internal/config"
 	"github.com/tsawler/bookings-app/internal/models"
 )
 
-var functions = template.FuncMap{}
+// Create a function to render a time as a standard date
+func standardDate(t time.Time) string {
+	return t.Format("2006-01-02")
+}
+
+var functions = template.FuncMap{
+	"stdDate": standardDate,
+}
 
 var app *config.AppConfig
 var pathToTemplates = "./templates"

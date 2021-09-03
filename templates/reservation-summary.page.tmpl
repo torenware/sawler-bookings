@@ -19,11 +19,11 @@
                     </tr>
                     <tr>
                         <td>Arrival:</td>
-                        <td>{{$res.StartDate}}</td>
+                        <td>{{$res.StartDate | stdDate}}</td>
                     </tr>
                     <tr>
                         <td>Departure:</td>
-                        <td>{{$res.EndDate}}</td>
+                        <td>{{$res.EndDate | stdDate }}</td>
                     </tr>
                     <tr>
                         <td>Email:</td>

@@ -8,8 +8,25 @@
 
                 {{$res := index .Data "reservation"}}
 
+                <table>
+                    <tbody>
+                        <tr>
+                            <th>Room</th><td>{{$res.Room.RoomName}}</td>
+                        </tr>
+                        <tr>
+                            <th>Arriving</th><td>{{$res.StartDate | stdDate}}</td>
+                        </tr>
+                        <tr>
+                            <th>Departing</th><td>{{$res.EndDate | stdDate}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
                 <form method="post" action="" class="" novalidate>
                     <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                    <input type="hidden" name="start_date" value="{{ $res.StartDate  | stdDate }}">
+                    <input type="hidden" name="end_date" value="{{ $res.EndDate | stdDate }}">
+                    <input type="hidden" id="room_id" name="room_id" value="{{ $res.RoomID }}">
 
                     <div class="form-group mt-3">
                         <label for="first_name">First Name:</label>
@@ -50,20 +67,6 @@
                                autocomplete="off" type='phone'
                                name='phone' value="{{$res.Phone}}" required>
                     </div>
-
-                    <div class="form-group">
-                      <label for="start_date">Start Date</label>
-                      <input type="text" id="start_date" 
-                             name="start_date" class="form-control">
-                    </div>
-
-                    <div class="form-group">
-                      <label for="end_date">End Date</label>
-                      <input type="text" id="end_date" 
-                             name="end_date"  class="form-control">
-                    </div>
-
-                    <input type="hidden" id="room_id" name="room_id" value="6">
 
                     <input type="submit" class="btn btn-primary" value="Make Reservation">
                 </form>

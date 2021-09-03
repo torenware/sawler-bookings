@@ -1,11 +1,12 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/tsawler/bookings-app/internal/config"
 	"github.com/tsawler/bookings-app/internal/handlers"
-	"net/http"
 )
 
 func routes(app *config.AppConfig) http.Handler {
@@ -26,6 +27,7 @@ func routes(app *config.AppConfig) http.Handler {
 
 	mux.Get("/contact", handlers.Repo.Contact)
 
+	mux.Get("/choose-room/{id}", handlers.Repo.ChooseRoom)
 	mux.Get("/make-reservation", handlers.Repo.Reservation)
 	mux.Post("/make-reservation", handlers.Repo.PostReservation)
 	mux.Get("/reservation-summary", handlers.Repo.ReservationSummary)

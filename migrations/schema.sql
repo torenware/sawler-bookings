@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.12 (Debian 11.12-0+deb10u1)
--- Dumped by pg_dump version 11.12 (Debian 11.12-0+deb10u1)
+-- Dumped from database version 13.4
+-- Dumped by pg_dump version 13.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -18,7 +18,7 @@ SET row_security = off;
 
 SET default_tablespace = '';
 
-SET default_with_oids = false;
+SET default_table_access_method = heap;
 
 --
 -- Name: reservations; Type: TABLE; Schema: public; Owner: saylordb
@@ -107,7 +107,7 @@ CREATE TABLE public.room_restrictions (
     start_date date NOT NULL,
     end_date date NOT NULL,
     room_id integer NOT NULL,
-    reservation_id integer NOT NULL,
+    reservation_id integer,
     restriction_id integer NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL

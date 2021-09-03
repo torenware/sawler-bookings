@@ -1,5 +1,5 @@
 #! /bin/bash
 
-source ~/sawler/bookings-app/.env
+source ~/projects/golang/bookings-app/.env
 PGPASSWORD=$DB_PASSWD  psql -h $DB_HOST -U $DB_USER
 
