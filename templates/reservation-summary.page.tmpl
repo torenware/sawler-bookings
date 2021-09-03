@@ -13,14 +13,18 @@
                 <table class="table table-striped">
                     <thead></thead>
                     <tbody>
-                    <tr>
-                        <td>Name:</td>
-                        <td>{{$res.FirstName}} {{$res.LastName}}</td>
-                    </tr>
-                    <tr>
+                        <tr>
+                            <td>Name:</td>
+                            <td>{{$res.FirstName}} {{$res.LastName}}</td>
+                        </tr>
+                        <tr>
+                            <td>Room:</td>
+                            <td> {{$res.Room.RoomName}}</td>
+                        </tr>
+                            <tr>
                         <td>Arrival:</td>
                         <td>{{$res.StartDate | stdDate}}</td>
-                    </tr>
+                        </tr>
                     <tr>
                         <td>Departure:</td>
                         <td>{{$res.EndDate | stdDate }}</td>

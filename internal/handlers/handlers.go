@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -80,6 +81,8 @@ func (m *Repository) ChooseRoom(w http.ResponseWriter, r *http.Request) {
 
 	res.RoomID = roomID
 	res.Room = room
+	log.Println("Res before make res form:")
+	helpers.PrintStruct(res)
 	m.App.Session.Put(r.Context(), "reservation", res)
 	http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)
 }
@@ -93,6 +96,8 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res = sessData.(models.Reservation)
+	log.Println("does room return from gob?")
+	helpers.PrintStruct(res)
 
 	data := make(map[string]interface{})
 	data["reservation"] = res
@@ -111,31 +116,10 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	date_layout := "2006-01-02"
-	sd, err := time.Parse(date_layout, r.Form.Get("start_date"))
-	if err != nil {
-		helpers.ServerError(w, err)
+	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
+	if !ok {
+		helpers.ServerError(w, errors.New("could not recover reservation from session"))
 		return
-	}
-	ed, err := time.Parse(date_layout, r.Form.Get("end_date"))
-	if err != nil {
-		helpers.ServerError(w, err)
-		return
-	}
-	room_id, err := strconv.Atoi(r.Form.Get("room_id"))
-	if err != nil {
-		helpers.ServerError(w, err)
-		return
-	}
-
-	reservation := models.Reservation{
-		FirstName: r.Form.Get("first_name"),
-		LastName:  r.Form.Get("last_name"),
-		Email:     r.Form.Get("email"),
-		Phone:     r.Form.Get("phone"),
-		StartDate: sd,
-		EndDate:   ed,
-		RoomID:    int(room_id),
 	}
 
 	form := forms.New(r.PostForm)
@@ -143,6 +127,11 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	form.Required("first_name", "last_name", "email")
 	form.MinLength("first_name", 3)
 	form.IsEmail("email")
+
+	reservation.FirstName = r.Form.Get("first_name")
+	reservation.LastName = r.Form.Get("last_name")
+	reservation.Email = r.Form.Get("email")
+	reservation.Phone = r.Form.Get("phone")
 
 	if !form.Valid() {
 		data := make(map[string]interface{})
@@ -219,8 +208,9 @@ func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
 
 	// If no rooms, show an error to the user on the SA page.
 	if len(rooms) == 0 {
+		log.Println("No room available for these dates")
 		m.App.Session.Put(r.Context(), "error", "No rooms available for these dates")
-		http.Redirect(w, r, "/search-availability", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/search-availability", http.StatusSeeOther)
 		return
 	}
 
@@ -279,7 +269,7 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// helpers.PrintStruct(reservation)
+	helpers.PrintStruct(reservation)
 
 	m.App.Session.Remove(r.Context(), "reservation")
 
