@@ -56,6 +56,7 @@
     document.getElementById("check-availability-button").addEventListener("click", function () {
         let html = `
         <form id="check-availability-form" action="" method="post" novalidate class="needs-validation">
+            <input type="hidden" name="room_id" value="1">
             <div class="form-row">
                 <div class="col">
                     <div class="form-row" id="reservation-dates-modal">
@@ -79,6 +80,7 @@
                 const rp = new DateRangePicker(elem, {
                     format: 'yyyy-mm-dd',
                     showOnFocus: true,
+                    minDate: new Date()
                 })
             },
             didOpen: () => {
