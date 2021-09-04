@@ -1,5 +1,10 @@
 #! /bin/bash
 
-source ~/projects/golang/bookings-app/.env
+if [ "$GO_ENV" == "test" ]; then
+  source ./.env-test
+else
+  source ./.env
+fi
+#source ~/projects/golang/bookings-app/.env
 PGPASSWORD=$DB_PASSWD  psql -h $DB_HOST -U $DB_USER
 
