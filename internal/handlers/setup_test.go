@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/gob"
 	"fmt"
 	"html/template"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"testing"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
@@ -15,7 +17,8 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/justinas/nosurf"
 	"github.com/tsawler/bookings-app/internal/config"
-	driverDef "github.com/tsawler/bookings-app/internal/driver"
+
+	//driverDef "github.com/tsawler/bookings-app/internal/driver"
 	"github.com/tsawler/bookings-app/internal/models"
 	"github.com/tsawler/bookings-app/internal/render"
 )
@@ -23,9 +26,18 @@ import (
 var app config.AppConfig
 var session *scs.SessionManager
 var pathToTemplates = "./../../templates"
-var functions = template.FuncMap{}
 
-func getRoutes() http.Handler {
+// Create a function to render a time as a standard date
+func standardDate(t time.Time) string {
+	return t.Format("2006-01-02")
+}
+
+var functions = template.FuncMap{
+	"stdDate": standardDate,
+}
+
+// Create a testmain to run setup before tests are called.
+func TestMain(m *testing.M) {
 	// what am I going to put in the session
 	gob.Register(models.Reservation{})
 
@@ -49,16 +61,27 @@ func getRoutes() http.Handler {
 
 	tc, err := CreateTestTemplateCache()
 	if err != nil {
-		log.Fatal("cannot create template cache")
+		log.Fatal("cannot create template cache", err)
 	}
 
 	app.TemplateCache = tc
 	app.UseCache = true
 
-	// @todo add a real DB reference
-	dbRepo := driverDef.DB{}
+	os.Exit(m.Run())
+}
 
-	repo := NewRepo(&app, &dbRepo)
+// getCtx constructs a useable context for mocking.
+func getCtx(r *http.Request) context.Context {
+	ctx, err := session.Load(r.Context(), r.Header.Get("X-Session"))
+	if err != nil {
+		log.Println(err)
+	}
+	return ctx
+}
+
+func getRoutes() http.Handler {
+
+	repo := NewTestRepo(&app)
 	NewHandlers(repo)
 
 	render.NewRenderer(&app)

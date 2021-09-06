@@ -22,20 +22,23 @@ const portNumber = ":8080"
 var app config.AppConfig
 var session *scs.SessionManager
 
-// var infoLog *log.Logger
-// var errorLog *log.Logger
-
 // main is the main function
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Not loading env from dot file:", err)
 	}
-	db, err := run()
+	err = run()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	db, err := StartDB()
+	if err != nil {
+		log.Fatal("Cannot connect to database! Dying...")
+	}
 	defer db.SQL.Close()
+	InitRepo(&app, db)
 
 	fmt.Println(fmt.Sprintf("Staring application on port %s", portNumber))
 
@@ -50,7 +53,7 @@ func main() {
 	}
 }
 
-func run() (*driver.DB, error) {
+func run() error {
 	// what am I going to put in the session
 	gob.Register(models.Reservation{})
 	gob.Register(models.User{})
@@ -69,28 +72,35 @@ func run() (*driver.DB, error) {
 
 	app.Session = session
 
-	// connect to database
-	log.Println("Connecting to database...")
-	db, err := driver.ConnectSQL(driver.BuildDSN())
-	if err != nil {
-		log.Fatal("Cannot connect to database! Dying...")
-	}
-
-	log.Println("Connected to database!")
-
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatal("cannot create template cache", err.Error())
-		return nil, err
+		return err
 	}
 
 	app.TemplateCache = tc
 	app.UseCache = false
 
+	return nil
+}
+
+// StartDB factors out the database startup code, so we can mock it later.
+func StartDB() (*driver.DB, error) {
+	// connect to database
+	log.Println("Connecting to database...")
+	db, err := driver.ConnectSQL(driver.BuildDSN())
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println("Connected to database!")
+	return db, nil
+}
+
+// InitRepo sets up various dependencies of the repo.
+func InitRepo(appPtr *config.AppConfig, db *driver.DB) {
 	repo := handlers.NewRepo(&app, db)
 	handlers.NewHandlers(repo)
 	render.NewRenderer(&app)
 	helpers.NewHelpers(&app, nil, nil)
-
-	return db, nil
 }

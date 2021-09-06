@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -34,6 +35,14 @@ func NewRepo(a *config.AppConfig, db *driver.DB) *Repository {
 	return &Repository{
 		App: a,
 		DB:  dbrepo.NewPostgresRepo(db.SQL, a),
+	}
+}
+
+// NewTestRepo returns the repo struct used for test mocks.
+func NewTestRepo(a *config.AppConfig) *Repository {
+	return &Repository{
+		App: a,
+		DB:  dbrepo.NewTestingRepo(a),
 	}
 }
 
@@ -92,12 +101,11 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 	sessData := m.App.Session.Get(r.Context(), "reservation")
 	var res models.Reservation
 	if _, ok := sessData.(models.Reservation); !ok {
-		helpers.ServerError(w, errors.New("could not get data out of session"))
+		m.App.Session.Put(r.Context(), "error", "could not get data out of session")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 	res = sessData.(models.Reservation)
-	log.Println("does room return from gob?")
-	helpers.PrintStruct(res)
 
 	data := make(map[string]interface{})
 	data["reservation"] = res
@@ -112,13 +120,15 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		helpers.ServerError(w, err)
+		m.App.Session.Put(r.Context(), "error", "could not parse form")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
 	if !ok {
-		helpers.ServerError(w, errors.New("could not recover reservation from session"))
+		m.App.Session.Put(r.Context(), "error", "could not get res out of session")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -135,6 +145,7 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 
 	if !form.Valid() {
 		data := make(map[string]interface{})
+		http.Error(w, "my own error message", http.StatusSeeOther)
 		data["reservation"] = reservation
 		render.Template(w, r, "make-reservation.page.tmpl", &models.TemplateData{
 			Form: form,
@@ -145,7 +156,9 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 
 	newID, err := m.DB.InsertReservation(reservation)
 	if err != nil {
-		helpers.ServerError(w, err)
+		m.App.Session.Put(r.Context(), "error", "could not create reservation")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
 	}
 	reservation.ID = newID
 
@@ -160,7 +173,9 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = m.DB.InsertRoomRestriction(restriction)
 	if err != nil {
-		helpers.ServerError(w, err)
+		m.App.Session.Put(r.Context(), "error", "could not restrict these dates")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
 	}
 
 	m.App.Session.Put(r.Context(), "reservation", reservation)
@@ -184,25 +199,34 @@ func (m *Repository) Availability(w http.ResponseWriter, r *http.Request) {
 
 // PostAvailability handles post
 func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
+	log.Println("form:", r.Form)
 	start := r.Form.Get("start")
 	end := r.Form.Get("end")
 
 	st, err := time.Parse("2006-01-02", start)
 	if err != nil {
-		helpers.ServerError(w, err)
+		m.App.ErrorLog.Println("Problem with your form data")
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "start date was garbled")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	en, err := time.Parse("2006-01-02", end)
 	if err != nil {
-		helpers.ServerError(w, err)
+		m.App.ErrorLog.Println("Problem with your form data")
+		m.App.Session.Put(r.Context(), "error", "end date was garbled")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	// Now get our options
 	rooms, err := m.DB.SearchAvailabilityByDates(st, en)
 	if err != nil {
-		helpers.ServerError(w, err)
+		m.App.ErrorLog.Println("Problem with your form data")
+		msg, _ := fmt.Printf("Search query returned error: %s", err)
+		m.App.Session.Put(r.Context(), "error", msg)
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 

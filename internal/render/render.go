@@ -56,8 +56,6 @@ func Template(w http.ResponseWriter, r *http.Request, tmpl string, td *models.Te
 	if !ok {
 		//log.Fatal("Could not get template from template cache")
 		return errors.New("could not get template from cache")
-	} else {
-		log.Println("We got a template from cache")
 	}
 
 	buf := new(bytes.Buffer)
