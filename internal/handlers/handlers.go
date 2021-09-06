@@ -199,7 +199,14 @@ func (m *Repository) Availability(w http.ResponseWriter, r *http.Request) {
 
 // PostAvailability handles post
 func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
-	log.Println("form:", r.Form)
+	err := r.ParseForm()
+	if err != nil {
+		m.App.ErrorLog.Println("Could not parse your form")
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "problem parsing the form")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
 	start := r.Form.Get("start")
 	end := r.Form.Get("end")
 
