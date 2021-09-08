@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -258,6 +259,45 @@ func TestRepository_PostAvailability(t *testing.T) {
 	// since we have rooms available, we expect to get status http.StatusTemporaryRedirect
 	if rr.Code != http.StatusTemporaryRedirect {
 		t.Errorf("Post availability when database query fails gave wrong status code: got %d, wanted %d", rr.Code, http.StatusTemporaryRedirect)
+	}
+}
+
+// checkErrorString checks the session's error field for a string
+func checkErrorString(ctx context.Context, qstring string) bool {
+	errStr, ok := session.Get(ctx, "error").(string)
+	if !ok {
+		return false
+	}
+	return strings.Contains(errStr, qstring)
+}
+
+func TestRepository_BookRoom(t *testing.T) {
+	values :=  url.Values{}
+
+	values.Set("id", "1")
+	values.Set("s", "2035-01-01")
+	values.Set("e", "2035-01-02")
+	qstr := "?" + values.Encode()
+	log.Println(qstr)
+
+	req, _ := http.NewRequest("GET", "/book-room" + qstr, nil)
+
+	// get the context with session
+	ctx := getCtx(req)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(Repo.BookRoom)
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("BookRoom: got %d but expected %d", rr.Code, http.StatusSeeOther)
+		return
+	}
+
+	_, ok := session.Get(ctx, "reservation").(models.Reservation)
+	if !ok {
+		t.Error("expected to see a reservation in the session, did not find it")
+		return
 	}
 }
 

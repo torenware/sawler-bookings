@@ -61,6 +61,50 @@ func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
 	render.Template(w, r, "about.page.tmpl", &models.TemplateData{})
 }
 
+// BookRoom bridges the room pages to the Reservation form.
+func (m *Repository) BookRoom(w http.ResponseWriter, r *http.Request) {
+	rm := r.URL.Query().Get("id")
+	start := r.URL.Query().Get("s")
+	end := r.URL.Query().Get("e")
+
+	room_id, err := strconv.Atoi(rm)
+	if err != nil {
+		m.App.Session.Put(r.Context(), "error", "room number is invalid")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+	layout := "2006-01-02"
+	start_date, err := time.Parse(layout, start)
+	if err != nil {
+		m.App.Session.Put(r.Context(), "error", "start date is invalid")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+	end_date, err := time.Parse(layout, end)
+	if err != nil {
+		m.App.Session.Put(r.Context(), "error", "end date is invalid")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	room, err := m.DB.GetRoom(room_id)
+	if err != nil {
+		m.App.Session.Put(r.Context(), "error", "requested room does not exist")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	reservation := models.Reservation{
+	  RoomID: room_id,
+	  StartDate: start_date,
+	  EndDate: end_date,
+	  Room: room,
+	}
+	m.App.Session.Put(r.Context(), "reservation", reservation)
+	http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)
+
+}
+
 // ChooseRoom takes a link to a room and sets up the reservation form.
 func (m *Repository) ChooseRoom(w http.ResponseWriter, r *http.Request) {
 	exploded := strings.Split(r.URL.Path, "/")
@@ -327,6 +371,9 @@ func (m *Repository) AvailabilityJSON(w http.ResponseWriter, r *http.Request) {
 	resp := jsonResponse{
 		OK:      available,
 		Message: message,
+		StartDate: start,
+		EndDate: end,
+		RoomID: strconv.Itoa(room_id),
 	}
 
 	out, err := json.MarshalIndent(resp, "", "     ")
