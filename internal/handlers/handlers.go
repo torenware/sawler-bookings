@@ -8,9 +8,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/go-chi/chi"
 	"github.com/tsawler/bookings-app/internal/config"
 	"github.com/tsawler/bookings-app/internal/driver"
 	"github.com/tsawler/bookings-app/internal/forms"
@@ -63,16 +63,18 @@ func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
 
 // ChooseRoom takes a link to a room and sets up the reservation form.
 func (m *Repository) ChooseRoom(w http.ResponseWriter, r *http.Request) {
-	roomID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	exploded := strings.Split(r.URL.Path, "/")
+	roomID, err := strconv.Atoi(exploded[2])
 	if err != nil {
-		// really this should be a 404...
-		helpers.ServerError(w, err)
+		m.App.Session.Put(r.Context(), "error", "missing url parameter")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 	data := m.App.Session.Get(r.Context(), "reservation")
 	var res models.Reservation
 	if _, ok := data.(models.Reservation); !ok {
-		helpers.ServerError(w, errors.New("could not get res data from session"))
+		m.App.Session.Put(r.Context(), "error", "could not get reservation out of session")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	} else {
 		res, _ = data.(models.Reservation)
@@ -84,14 +86,13 @@ func (m *Repository) ChooseRoom(w http.ResponseWriter, r *http.Request) {
 		helpers.ClientError(w, http.StatusNotFound)
 		return
 	} else if err != nil {
-		helpers.ServerError(w, err)
+		m.App.Session.Put(r.Context(), "error", "could not fetch room for this ID")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	res.RoomID = roomID
 	res.Room = room
-	log.Println("Res before make res form:")
-	helpers.PrintStruct(res)
 	m.App.Session.Put(r.Context(), "reservation", res)
 	http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)
 }
@@ -264,37 +265,56 @@ func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
 }
 
 type jsonResponse struct {
-	OK      bool   `json:"ok"`
-	Message string `json:"message"`
+	OK        bool   `json:"ok"`
+	Message   string `json:"message"`
+	RoomID    string `json:"room_id"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
+}
+
+func generateJSONError(w http.ResponseWriter, err error, retcode int) {
+	info := jsonResponse{
+		OK:      false,
+		Message: err.Error(),
+	}
+	json, _ := json.MarshalIndent(info, "", "    ")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(retcode)
+	w.Write(json)
 }
 
 // AvailabilityJSON handles request for availability and sends JSON response
 func (m *Repository) AvailabilityJSON(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		generateJSONError(w, err, http.StatusBadRequest)
+		return
+	}
 	start := r.Form.Get("start")
 	end := r.Form.Get("end")
 	room := r.Form.Get("room_id")
 
 	room_id, err := strconv.Atoi(room)
 	if err != nil {
-		helpers.ServerError(w, errors.New("room_id must be supplied"))
+		generateJSONError(w, errors.New("room_id must be supplied"), http.StatusBadRequest)
 		return
 	}
 
 	st, err := time.Parse("2006-01-02", start)
 	if err != nil {
-		helpers.ServerError(w, err)
+		generateJSONError(w, errors.New("start date is invalid"), http.StatusBadRequest)
 		return
 	}
 
 	en, err := time.Parse("2006-01-02", end)
 	if err != nil {
-		helpers.ServerError(w, err)
+		generateJSONError(w, errors.New("end date is invalid"), http.StatusBadRequest)
 		return
 	}
 
 	available, err := m.DB.SearchAvailabilityByDatesForRoom(st, en, room_id)
 	if err != nil {
-		helpers.ServerError(w, err)
+		generateJSONError(w, errors.New("database lookup failed"), http.StatusBadRequest)
 		return
 	}
 
@@ -311,7 +331,7 @@ func (m *Repository) AvailabilityJSON(w http.ResponseWriter, r *http.Request) {
 
 	out, err := json.MarshalIndent(resp, "", "     ")
 	if err != nil {
-		helpers.ServerError(w, err)
+		generateJSONError(w, errors.New("could not encode result"), http.StatusInternalServerError)
 		return
 	}
 
@@ -334,7 +354,7 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	helpers.PrintStruct(reservation)
+	// helpers.PrintStruct(reservation)
 
 	m.App.Session.Remove(r.Context(), "reservation")
 

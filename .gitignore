@@ -3,6 +3,7 @@
 *~
 *.log
 coverage.out
+cp.out
 run.sh
 database.yml
 /web

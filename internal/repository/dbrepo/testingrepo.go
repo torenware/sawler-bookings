@@ -29,6 +29,27 @@ func (m *testingDBRepo) InsertRoomRestriction(res models.RoomRestriction) (int, 
 }
 
 func (m *testingDBRepo) SearchAvailabilityByDatesForRoom(start, end time.Time, roomID int) (bool, error) {
+	// if the start date is after 2049-12-31, then not available,
+	layout := "2006-01-02"
+	str := "2049-12-31"
+	noRoomDate, err := time.Parse(layout, str)
+	if err != nil {
+		log.Println(err)
+	}
+
+	testDateToFail, err := time.Parse(layout, "2060-01-01")
+	if err != nil {
+		log.Println(err)
+	}
+
+	if start == testDateToFail {
+		return false, errors.New("mock fails db lookup")
+	}
+
+	if start.After(noRoomDate) {
+		return false, nil
+	}
+
 	return true, nil
 }
 
@@ -60,7 +81,8 @@ func (m *testingDBRepo) SearchAvailabilityByDates(start, end time.Time) ([]model
 	// otherwise, put an entry into the slice, indicating that some room is
 	// available for search dates
 	room := models.Room{
-		ID: 1,
+		ID:       1,
+		RoomName: "Mock Room",
 	}
 	rooms = append(rooms, room)
 
