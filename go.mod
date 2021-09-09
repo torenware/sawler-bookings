@@ -11,4 +11,5 @@ require (
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/justinas/nosurf v1.1.1
 	github.com/xhit/go-simple-mail/v2 v2.10.0 // indirect
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 )

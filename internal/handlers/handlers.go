@@ -432,3 +432,49 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 		Data: data,
 	})
 }
+
+func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
+	render.Template(w, r, "login.page.tmpl", &models.TemplateData{
+		Form: forms.New(nil),
+	})
+}
+
+func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
+	_ = m.App.Session.RenewToken(r.Context())
+	err := r.ParseForm()
+	if err != nil {
+		m.App.Session.Put(r.Context(), "error", "could not parse form")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	form := forms.New(r.PostForm)
+
+	form.Required("password", "email")
+	form.IsEmail("email")
+
+	email := r.Form.Get("email")
+	password := r.Form.Get("password")
+
+	if !form.Valid() {
+		m.App.Session.Put(r.Context(), "error", "Some invalid items in your form")
+		render.Template(w, r, "login.page.tmpl", &models.TemplateData{
+			Form: form,
+		})
+		return
+	}
+
+	id, _, err := m.DB.Authenticate(email, password)
+	if err != nil {
+		m.App.Session.Put(r.Context(), "error", "Login did not succeed")
+		m.App.ErrorLog.Printf("Login by %s (id=%d) failed", email, id)
+		http.Redirect(w, r, "/users/login", http.StatusSeeOther)
+		return
+	}
+
+	// We should be authed now
+	m.App.Session.Put(r.Context(), "user_id", id)
+	m.App.Session.Put(r.Context(), "flash", "Welcome! You are logging in.")
+	log.Println("Should redirect on successful login")
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+}

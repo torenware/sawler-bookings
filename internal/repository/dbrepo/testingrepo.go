@@ -97,3 +97,17 @@ func (m *testingDBRepo) GetRoom(id int) (models.Room, error) {
 	}
 	return room, nil
 }
+
+func (m *testingDBRepo) GetUserByID(id int) (*models.User, error) {
+	return nil, nil
+}
+
+func (m *testingDBRepo) UpdateUser(u *models.User) error {
+	return nil
+}
+
+func (m *testingDBRepo) Authenticate(email, password string) (int, string, error) {
+	return 0, "", errors.New("Not authenticated")
+}
+
+

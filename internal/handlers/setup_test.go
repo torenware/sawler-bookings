@@ -67,6 +67,18 @@ func TestMain(m *testing.M) {
 	app.TemplateCache = tc
 	app.UseCache = true
 
+	// Set up a mock for sending mail
+	app.MailChan = make(chan models.MailData)
+	defer close(app.MailChan)
+	func() {
+		go func() {
+			for {
+				msg := <- app.MailChan
+				log.Printf("Mail sent to %s", msg.To)
+			}
+		}()
+	}()
+
 	os.Exit(m.Run())
 }
 
