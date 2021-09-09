@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h2>Reservation Confirmed</h2>
+
+<p>Dear {{ .StringMap.first }},</p>
+
+<p>Thank you for reserving at our humble hotel. Here are the details
+of your reservation</p>
+
+<table>
+    <tbody>
+    <tr>
+        <th>Room:</th><td>{{.StringMap.room}}</td>
+    </tr>
+    <tr>
+        <th>From:</th><td>{{.StringMap.start_date}}</td>
+    </tr>
+    <tr>
+        <th>To:</th><td>{{.StringMap.end_date}}</td>
+    </tr>
+    </tbody>
+</table>
+
+<p>See you then!</p>
+<p>Da Ownahs</p>
+
+</body>
+</html>

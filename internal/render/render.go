@@ -41,8 +41,9 @@ func AddDefaultData(td *models.TemplateData, r *http.Request) *models.TemplateDa
 	return td
 }
 
-// Template renders a template
-func Template(w http.ResponseWriter, r *http.Request, tmpl string, td *models.TemplateData) error {
+// fetchAndRenderTemplate factors out template rendering.
+// r should be nil if not used to generate actual html pages.
+func fetchAndRenderTemplate(tmpl string, td *models.TemplateData, r *http.Request) (*bytes.Buffer, error) {
 	var tc map[string]*template.Template
 
 	if app.UseCache {
@@ -55,16 +56,44 @@ func Template(w http.ResponseWriter, r *http.Request, tmpl string, td *models.Te
 	t, ok := tc[tmpl]
 	if !ok {
 		//log.Fatal("Could not get template from template cache")
-		return errors.New("could not get template from cache")
+		return nil, errors.New("could not get template from cache")
 	}
 
 	buf := new(bytes.Buffer)
-
-	td = AddDefaultData(td, r)
+    if r != nil {
+		td = AddDefaultData(td, r)
+	}
 
 	err := t.Execute(buf, td)
 	if err != nil {
 		log.Printf("Error processing template: %s", err)
+		return nil, err
+	}
+    return buf, nil
+}
+
+// TemplateAsString renders out a template as a string.
+func TemplateAsString(tmpl string, td *models.TemplateData) (string, error) {
+	buf, err := fetchAndRenderTemplate(tmpl, td, nil)
+	if err != nil {
+		log.Printf("Error processing template: %s", err)
+		return "", err
+	}
+	if buf == nil {
+		return "", errors.New("template buffer unavailable")
+	}
+    return buf.String(), nil
+}
+
+// Template renders a template
+func Template(w http.ResponseWriter, r *http.Request, tmpl string, td *models.TemplateData) error {
+    buf, err := fetchAndRenderTemplate(tmpl, td, r)
+	if err != nil {
+		log.Printf("Error processing template: %s", err)
+		return err
+	}
+	if buf == nil {
+		return errors.New("template buffer unavailable")
 	}
 
 	_, err = buf.WriteTo(w)
@@ -72,9 +101,7 @@ func Template(w http.ResponseWriter, r *http.Request, tmpl string, td *models.Te
 		fmt.Println("error writing template to browser", err)
 		return err
 	}
-
 	return nil
-
 }
 
 // CreateTemplateCache creates a template cache as a map

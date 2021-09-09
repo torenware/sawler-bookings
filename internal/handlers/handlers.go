@@ -223,6 +223,26 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mailData := models.MailData{
+		To: fmt.Sprintf("%s %s <%s>", reservation.FirstName, reservation.LastName, reservation.Email) ,
+		From: "The Hotel Reservations <manager@otel.com>",
+		Subject: "Your Reservation",
+	}
+	fields := make(map[string]string)
+	fields["first"] = reservation.FirstName
+	fields["room"] = reservation.Room.RoomName
+	fields["start_date"] = reservation.StartDate.Format("2006-01-02")
+	fields["end_date"] = reservation.EndDate.Format("2006-01-02")
+	content, err := render.BuildMailHTML("mail-message.page.tmpl", fields, mailData )
+	if err != nil {
+		m.App.ErrorLog.Println("could not prepare message to send")
+		m.App.Session.Put(r.Context(), "error", "sending message failed")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+	mailData.Content = content
+	m.App.MailChan <- mailData
+
 	m.App.Session.Put(r.Context(), "reservation", reservation)
 	http.Redirect(w, r, "/reservation-summary", http.StatusSeeOther)
 }

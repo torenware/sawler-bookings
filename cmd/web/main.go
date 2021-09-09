@@ -32,6 +32,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer close(app.MailChan)
+	if !listenForMail() {
+		log.Fatalf("Mail port at %d is not available", MailPort)
+	}
+
+	//// Test our mail go routine
+	//mail := models.MailData{
+	//	To:      "somebody@wall.com",
+	//	From:    "killroy@washere.com",
+	//	Subject: "Test Message",
+	//	Content: "Did it?",
+	//}
+	//
+	//app.MailChan <- mail
 
 	db, err := StartDB()
 	if err != nil {
@@ -59,6 +73,10 @@ func run() error {
 	gob.Register(models.User{})
 	gob.Register(models.Room{})
 	gob.Register(models.RoomRestriction{})
+
+	// Set up mail support
+	mailChan := make(chan models.MailData)
+	app.MailChan = mailChan
 
 	// change this to true when in production
 	app.InProduction = false
