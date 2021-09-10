@@ -46,3 +46,9 @@ func PrintStruct(item interface{}) {
 	data, _ := json.MarshalIndent(item, "", "    ")
 	fmt.Println(string(data))
 }
+
+// IsAuthed checks for authentication
+func IsAuthed(r *http.Request) bool {
+	exists := app.Session.Exists(r.Context(), "user_id")
+	return exists
+}

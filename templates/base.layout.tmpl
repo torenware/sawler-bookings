@@ -75,8 +75,18 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/contact">Contact</a>
                 </li>
+                {{ if .Authed }}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+                    </li>
+                {{ end }}
                 <li class="nav-item">
-                    <a class="nav-link" href="/users/login">Contact</a>
+                    {{ if .Authed }}
+                     <a class="nav-link" href="/user/logout">Logout</a>
+
+                    {{ else }}
+                      <a class="nav-link" href="/user/login">Login</a>
+                    {{ end }}
                 </li>
 
             </ul>

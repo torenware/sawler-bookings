@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/tsawler/bookings-app/internal/helpers"
 	"html/template"
 	"log"
 	"net/http"
@@ -34,6 +35,7 @@ func NewRenderer(a *config.AppConfig) {
 
 // AddDefaultData adds data for all templates
 func AddDefaultData(td *models.TemplateData, r *http.Request) *models.TemplateData {
+	td.Authed = helpers.IsAuthed(r)
 	td.Flash = app.Session.PopString(r.Context(), "flash")
 	td.Warning = app.Session.PopString(r.Context(), "warning")
 	td.Error = app.Session.PopString(r.Context(), "error")

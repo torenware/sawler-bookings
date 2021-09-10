@@ -474,7 +474,16 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 
 	// We should be authed now
 	m.App.Session.Put(r.Context(), "user_id", id)
-	m.App.Session.Put(r.Context(), "flash", "Welcome! You are logging in.")
+	m.App.Session.Put(r.Context(), "flash", "Welcome! You are logged in.")
 	log.Println("Should redirect on successful login")
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (m *Repository) Logout(w http.ResponseWriter, r *http.Request) {
+	m.App.Session.Remove(r.Context(), "user_id")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (m *Repository) AuthDashboard(w http.ResponseWriter, r *http.Request) {
+	render.Template(w, r, "admin-dashboard.page.tmpl", &models.TemplateData{})
 }
