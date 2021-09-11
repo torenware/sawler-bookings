@@ -480,7 +480,8 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) Logout(w http.ResponseWriter, r *http.Request) {
-	m.App.Session.Remove(r.Context(), "user_id")
+	m.App.Session.Destroy(r.Context())
+	m.App.Session.RenewToken(r.Context())
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
